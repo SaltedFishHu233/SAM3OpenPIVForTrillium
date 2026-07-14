@@ -7,6 +7,9 @@ import numpy as np
 from transformers import AutoTokenizer, Sam3Model, Sam3ImageProcessor
 from datetime import datetime,timedelta
 
+THRESHOLD = 0.5  # Set the threshold for segmentation mask generation.
+MASK_THRESHOLD = 0.5  # Set the threshold for mask generation.
+
 # Segment an input image using a text prompt and the local SAM3 model.
 def SegmentThis(image: Image.Image, FileName: str, prompt: str, OutputFolder: str = "OutputImages"):
     # Load the model and processor from the local checkpoint directory.
@@ -19,7 +22,7 @@ def SegmentThis(image: Image.Image, FileName: str, prompt: str, OutputFolder: st
 
     img_with_border = ImageOps.expand(image,border=300,fill='white')
 
-    model = Sam3Model.from_pretrained("./LocalSAM3", device_map="cpu")
+    model = Sam3Model.from_pretrained("./LocalSAM3", device_map="auto")     #auto detect "cuda" or "cpu"
     processor = Sam3ImageProcessor.from_pretrained("./LocalSAM3Processor")
     tokenizer = AutoTokenizer.from_pretrained("./LocalSAM3Tokenizer")
     # Prepare the image and prompt for model inference.
@@ -34,8 +37,8 @@ def SegmentThis(image: Image.Image, FileName: str, prompt: str, OutputFolder: st
     # Convert the model output into segmentation results.
     results = processor.post_process_instance_segmentation(
         outputs,
-        threshold=0.5,
-        mask_threshold=0.5,
+        threshold=THRESHOLD, 
+        mask_threshold=MASK_THRESHOLD,
         target_sizes=inputs.get("original_sizes").tolist()
     )[0]
     print(f"Results Ready, found {len(results['masks'])} masks" )
